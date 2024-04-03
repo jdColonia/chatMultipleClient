@@ -1,57 +1,46 @@
-import java.util.Set;
 import java.io.PrintWriter;
-import java.net.Socket;
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 public class Chatters {
 
-    private Set<User> clients = new HashSet<>();
+    private Map<String, User> clients = new HashMap<>();
 
-    public Chatters() {
+    // Verificar si un usuario existe en el conjunto de clientes
+    public boolean existUsr(String name) {
+        return clients.containsKey(name);
     }
 
-    public boolean existeUsr(String name) {
-        boolean response = false;
-        for (User p : clients) {
-            if (name.equals(p.getUsername())) {
-                response = true;
-                break;
-            }
-        }
-        return response;
-    }
-
+    // Agregar un usuario al conjunto de clientes
     public void addUsr(String name, PrintWriter out) {
-        if (!name.isBlank() && !existeUsr(name)) {
-            User p = new User(name, out);
-            clients.add(p);
-        }
+        User user = new User(name, out);
+        clients.put(name, user);
     }
 
+    // Eliminar un usuario del conjunto de clientes
     public void removeUsr(String name) {
-        for (User p : clients) {
-            if (name.equals(p.getUsername())) {
-                clients.remove(p);
-                break;
-            }
-        }
+        clients.remove(name);
     }
 
-    public void broadcastMessage(String message) {
-
-        for (User p : clients) {
-            p.getOut().println(message);
+    // Enviar un mensaje de broadcast a todos los usuarios excepto al remitente
+    public void broadcastMessage(String nameSrc, String message) {
+        for (User user : clients.values()) {
+            if (!user.getUsername().equals(nameSrc)) {
+                user.getOut().println(message);
+            }
         }
     }
 
     // Enviar un mensaje privado a la persona con un nombre dado nameDest
     public void sendPrivateMessage(String nameSrc, String nameDest, String message) {
-        for (User p : clients) {
-            if (nameDest.equals(p.getUsername())) {
-                p.getOut().println("[Chat privado de " + nameSrc + "]: " + message);
+        for (User user : clients.values()) {
+            if (nameDest.equals(user.getUsername())) {
+                user.getOut().println("[Chat privado de " + nameSrc + "]: " + message);
                 break;
+            } else {
+                System.out.println("SERVIDOR: El usuario '" + nameDest + "' no está disponible.");
             }
         }
     }

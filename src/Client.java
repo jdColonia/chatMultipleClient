@@ -1,46 +1,87 @@
 import java.io.*;
 import java.net.*;
+import java.util.NoSuchElementException;
+import java.util.Scanner;
 
 public class Client {
 
-    private static final String SERVER_IP = "127.0.0.1";
+    public static final Scanner scanner = new Scanner(System.in);
+
+    private static final String SERVER_IP = "localhost";
     private static final int PORT = 6789;
+    private Socket clientSocket;
+    private BufferedReader in;
+    private PrintWriter out;
+    private String username;
 
-    public static void main(String[] args) {
-
+    public Client(Socket clientSocket, String username) {
         try {
+            this.clientSocket = clientSocket;
+            this.username = username;
+            // Crear canales de entrada in y de salida out para la comunicación
+            this.in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+            this.out = new PrintWriter(clientSocket.getOutputStream(), true);
+        } catch (IOException e) {
+            closeEveryThing(clientSocket, in, out);
+        }
+    }
 
-            Socket socket = new Socket(SERVER_IP, PORT);
-            System.out.println("Conectado al servidor.");
+    public void sendMessage() {
+        out.println(username);
+        out.flush();
+        while (clientSocket.isConnected()) {
+            try {
+                String messageToSend = scanner.nextLine();
+                out.println(messageToSend);
+                out.flush();
+            } catch (NoSuchElementException e) {
+                closeEveryThing(clientSocket, in, out);
+                break;
+            }
+        }
+    }
 
-            String message;
-            BufferedReader userInput = new BufferedReader(new InputStreamReader(System.in));
-            PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
-            BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-
-            while ((message = in.readLine()) != null) {
-                // Eepetir el ciclo hasta que no ingrese un nombre valido
-                if (message.startsWith("SUBMITNAME")) {
-                    System.out.print("Ingrese nombre de usuario: ");
-                    String name = userInput.readLine();
-                    out.println(name);
-                } else if (message.startsWith("NAMEACCEPTED")) {
-                    System.out.println("Nombre aceptado!!");
-                    break;
+    public void listenForMessage() {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                String msgFromGroupChat;
+                while (clientSocket.isConnected()) {
+                    try {
+                        msgFromGroupChat = in.readLine();
+                        System.out.println(msgFromGroupChat);
+                    } catch (IOException e) {
+                        closeEveryThing(clientSocket, in, out);
+                    }
                 }
             }
+        }).start();
+    }
 
-            // Creamos el objeto lector e iniciamos el hilo
-            Lector lector = new Lector(in);
-            new Thread(lector).start();
-
-            // Estar atento a la entrada del usuario
-            while ((message = userInput.readLine()) != null) {
-                out.println(message);
+    public void closeEveryThing(Socket clientSocket, BufferedReader in, PrintWriter out) {
+        try {
+            if (in != null) {
+                in.close();
             }
-
+            if (out != null) {
+                out.close();
+            }
+            if (clientSocket != null) {
+                clientSocket.close();
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
+
+    public static void main(String[] args) throws IOException {
+        System.out.println("[SERVIDOR] Conectado al servidor");
+        System.out.print("[SERVIDOR] Ingrese su nombre de usuario: ");
+        String username = scanner.nextLine();
+        Socket socket = new Socket(SERVER_IP, PORT);
+        Client client = new Client(socket, username);
+        client.listenForMessage();
+        client.sendMessage();
+    }
+
 }

@@ -1,34 +1,49 @@
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.HashSet;
-import java.util.Set;
 
 public class Server {
 
-    private static Set<PrintWriter> writers = new HashSet<>();
+    private ServerSocket serverSocket;
+    private static final int PORT = 6789;
+    Chatters clients;
 
-    public static void main(String[] args) {
+    public Server(ServerSocket serverSocket) {
+        this.serverSocket = serverSocket;
+        this.clients = new Chatters();
+    }
 
-        int PORT = 6789;
-        Chatters clientes = new Chatters();
-
+    public void startServer() {
         try {
-            ServerSocket serverSocket = new ServerSocket(PORT);
-            System.out.println("Servidor iniciado. Esperando clientes...");
-
-            while (true) {
+            while (!serverSocket.isClosed()) {
                 Socket clientSocket = serverSocket.accept();
-                System.out.println("Nuevo cliente conectado: " + clientSocket);
+                System.out.println("Un nuevo cliente se ha conectado.");
+                ClientHandler clientHandler = new ClientHandler(clientSocket, clients);
                 // Crea el objeto Runable
-                ClientHandler clientHandler = new ClientHandler(clientSocket, clientes);
+                Thread thread = new Thread(clientHandler);
                 // Inicia el hilo con el objeto Runnable
-                new Thread(clientHandler).start();
+                thread.start();
             }
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public void closeServerSocket() {
+        try {
+            if (serverSocket != null) {
+                serverSocket.close();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void main(String[] args) throws IOException {
+        System.out.println("Servidor iniciado. Esperando clientes...");
+        ServerSocket serverSocket = new ServerSocket(PORT);
+        Server server = new Server(serverSocket);
+        server.startServer();
     }
 
 }
