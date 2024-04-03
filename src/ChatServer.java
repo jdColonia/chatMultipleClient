@@ -67,9 +67,9 @@ public class ChatServer {
     }
 
     // Enviar un mensaje de broadcast a todos los usuarios excepto al remitente
-    public void broadcastMessage(String nameSrc, String message) {
+    public void broadcastMessage(String sourceName, String message) {
         for (User user : users.values()) {
-            if (!user.getUsername().equals(nameSrc)) {
+            if (!user.getUsername().equals(sourceName)) {
                 user.getOut().println(message);
             }
         }
@@ -137,7 +137,7 @@ public class ChatServer {
             removeUsr(sourceName);
             user.getOut().println("¡Hasta luego!");
         } else {
-            broadcastMessage(sourceName + ": " + command, sourceName);
+            broadcastMessage(sourceName, "[" + sourceName + "]: " + command);
         }
     }
 

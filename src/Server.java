@@ -1,15 +1,19 @@
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class Server {
 
     private static final int PORT = 6789;
     private ServerSocket serverSocket;
+    private ExecutorService threadPool;
     ChatServer chat;
 
     public Server(ServerSocket serverSocket) {
         this.serverSocket = serverSocket;
+        this.threadPool = Executors.newFixedThreadPool(10);
         this.chat = new ChatServer();
     }
 
@@ -19,10 +23,7 @@ public class Server {
                 Socket clientSocket = serverSocket.accept();
                 System.out.println("Un nuevo cliente se ha conectado.");
                 ClientHandler clientHandler = new ClientHandler(clientSocket, chat);
-                // Crea el objeto Runable
-                Thread thread = new Thread(clientHandler);
-                // Inicia el hilo con el objeto Runnable
-                thread.start();
+                threadPool.execute(clientHandler);
             }
         } catch (IOException e) {
             e.printStackTrace();
