@@ -10,12 +10,12 @@ public class User {
         this.out = out;
     }
 
-    // Obtiene el nombre de usuario del usuario.
+    // Obtiene el nombre de usuario del usuario
     public String getUsername() {
         return username;
     }
 
-    // Obtiene el flujo de salida para enviar mensajes al usuario.
+    // Obtiene el flujo de salida para enviar mensajes al usuario
     public PrintWriter getOut() {
         return out;
     }

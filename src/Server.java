@@ -4,13 +4,13 @@ import java.net.Socket;
 
 public class Server {
 
-    private ServerSocket serverSocket;
     private static final int PORT = 6789;
-    Chatters clients;
+    private ServerSocket serverSocket;
+    ChatServer chat;
 
     public Server(ServerSocket serverSocket) {
         this.serverSocket = serverSocket;
-        this.clients = new Chatters();
+        this.chat = new ChatServer();
     }
 
     public void startServer() {
@@ -18,7 +18,7 @@ public class Server {
             while (!serverSocket.isClosed()) {
                 Socket clientSocket = serverSocket.accept();
                 System.out.println("Un nuevo cliente se ha conectado.");
-                ClientHandler clientHandler = new ClientHandler(clientSocket, clients);
+                ClientHandler clientHandler = new ClientHandler(clientSocket, chat);
                 // Crea el objeto Runable
                 Thread thread = new Thread(clientHandler);
                 // Inicia el hilo con el objeto Runnable
@@ -29,7 +29,7 @@ public class Server {
         }
     }
 
-    public void closeServerSocket() {
+    public void closeServer() {
         try {
             if (serverSocket != null) {
                 serverSocket.close();

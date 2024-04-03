@@ -5,8 +5,7 @@ import java.util.Scanner;
 
 public class Client {
 
-    public static final Scanner scanner = new Scanner(System.in);
-
+    public static final Scanner SCANNER = new Scanner(System.in);
     private static final String SERVER_IP = "localhost";
     private static final int PORT = 6789;
     private Socket clientSocket;
@@ -31,12 +30,11 @@ public class Client {
         out.flush();
         while (clientSocket.isConnected()) {
             try {
-                String messageToSend = scanner.nextLine();
+                String messageToSend = SCANNER.nextLine();
                 out.println(messageToSend);
                 out.flush();
             } catch (NoSuchElementException e) {
                 closeEveryThing(clientSocket, in, out);
-                break;
             }
         }
     }
@@ -77,7 +75,7 @@ public class Client {
     public static void main(String[] args) throws IOException {
         System.out.println("[SERVIDOR] Conectado al servidor");
         System.out.print("[SERVIDOR] Ingrese su nombre de usuario: ");
-        String username = scanner.nextLine();
+        String username = SCANNER.nextLine();
         Socket socket = new Socket(SERVER_IP, PORT);
         Client client = new Client(socket, username);
         client.listenForMessage();
