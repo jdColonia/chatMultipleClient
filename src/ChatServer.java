@@ -43,19 +43,42 @@ public class ChatServer {
     }
 
     // Crea un grupo
-    public void createGroup(String groupName) {
+    public void createGroup(String groupName, String creatorUsername) {
         Group group = new Group(groupName);
         groups.put(groupName, group);
+        
+        // Agregar al creador del grupo como miembro del grupo
+        User creator = getUser(creatorUsername);
+        if (creator != null) {
+            group.addMember(creator);
+            creator.getOut().println("[SERVIDOR] Grupo " + groupName + " creado exitosamente. ¡Bienvenido/a al grupo!");
+        }
     }
+    
 
     // Añade a un usuario a un grupo
     public void joinGroup(String username, String groupName) {
         User user = getUser(username);
         Group group = getGroup(groupName);
         if (user != null && group != null) {
-            group.addMember(user);
+            if (!group.getMembers().contains(user)) {
+                group.addMember(user);
+                broadcastGroupMessage("[SERVIDOR] Bienvenido/a al grupo " + groupName + ", " + username + " se ha unido.", group);
+            } else {
+                user.getOut().println("[SERVIDOR] Ya eres miembro del grupo " + groupName);
+            }
+        } else {
+            user.getOut().println("[SERVIDOR] El grupo " + groupName + " no existe");
         }
     }
+
+    public void broadcastGroupMessage(String message, Group group) {
+        for (User user : group.getMembers()) {
+            user.getOut().println(message);
+            user.getOut().flush(); // Asegurar que el mensaje se envíe inmediatamente
+        }
+    }
+    
 
     // Elimina un usuario de un grupo
     public void leaveGroup(String username, String groupName) {
@@ -90,14 +113,19 @@ public class ChatServer {
         User source = getUser(sourceName);
         Group group = getGroup(groupName);
         if (source != null && group != null) {
-            for (User user : group.getMembers()) {
-                if (!user.getUsername().equals(sourceName)) {
-                    user.getOut().println("[Mensaje grupo " + groupName + " de " + sourceName + "]: " + message);
+            if (group.getMembers().contains(source)) {
+                for (User user : group.getMembers()) {
+                    if (!user.getUsername().equals(sourceName)) {
+                        user.getOut().println("[Mensaje grupo " + groupName + " de " + sourceName + "]: " + message);
+                    }
                 }
+                history.add("[Mensaje grupo " + groupName + " de " + sourceName + "]: " + message);
+            } else {
+                source.getOut().println("[SERVIDOR] No eres miembro del grupo " + groupName);
             }
-            history.add("[Mensaje grupo " + groupName + " de " + sourceName + "]: " + message);
         }
     }
+    
 
     public void showHistory(User user) {
         for (String message : history) {
@@ -122,7 +150,7 @@ public class ChatServer {
         } else if (parts[0].equals("/creategroup")) {
             if (parts.length == 2) {
                 String groupName = parts[1];
-                createGroup(groupName);
+                createGroup(groupName, sourceName);
             }
         } else if (parts[0].equals("/join")) {
             if (parts.length == 2) {

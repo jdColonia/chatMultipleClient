@@ -20,4 +20,10 @@ public class User {
         return out;
     }
 
+    public void callUser(User receiver) {
+        Call call = new Call(this, receiver);
+    }
+
+    public void receiveCall(User sender) {
+    }
 }

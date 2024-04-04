@@ -53,7 +53,7 @@ class ClientHandler implements Runnable {
             }
             synchronized (clientUsername) {
                 chat.addUsr(clientUsername, out); // Añade al cliente al chat con su canal de salida out
-                chat.broadcastMessage("[SERVIDOR] " + clientUsername + " se ha unido al chat.", clientUsername); // Notifica a los demás usuarios sobre el nuevo miembro
+                chat.broadcastMessage(clientUsername, "[SERVIDOR] " + clientUsername + " se ha unido al chat."); // Notifica a los demás usuarios sobre el nuevo miembro
                 showInstructions(clientUsername); // Muestra las instrucciones después de unirse al chat
             }
         } catch (IOException e) {
