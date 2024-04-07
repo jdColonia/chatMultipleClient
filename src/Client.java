@@ -3,6 +3,9 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.io.ByteArrayOutputStream;
+import java.util.Arrays;
+
 
 public class Client {
 
@@ -28,7 +31,7 @@ public class Client {
         }
     }
 
-    public void sendMessage() {
+    /*public void sendMessage() {
         out.println(username);
         out.flush();
         while (clientSocket.isConnected()) {
@@ -42,6 +45,37 @@ public class Client {
                 }
             } catch (IOException e) {
                 closeEveryThing(clientSocket, in, out);
+            }
+        }
+    }*/
+
+    public void sendMessage() {
+        out.println(username); // Envía el nombre de usuario al servidor
+        out.flush();
+    
+        while (clientSocket.isConnected()) {
+            try {
+                String input = CONSOLE_READER.readLine(); // Lee la entrada del usuario desde la consola
+    
+                if (input.startsWith("/voz")) {
+                    // Iniciar grabación de audio
+                    ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+                    AudioRecorderPlayer recorderPlayer = new AudioRecorderPlayer();
+                    recorderPlayer.recordAudio(byteArrayOutputStream);
+    
+                    // Enviar los datos de audio al servidor
+                    byte[] audioData = byteArrayOutputStream.toByteArray();
+                    out.println("/voz " + username + " " + Arrays.toString(audioData));
+                    out.flush();
+                } else {
+                    // Enviar mensaje de texto al servidor
+                    if (!input.isEmpty()) {
+                        out.println(input); // Envía el mensaje al servidor
+                        out.flush();
+                    }
+                }
+            } catch (IOException e) {
+                System.err.println("Error al enviar el mensaje: " + e.getMessage());
             }
         }
     }

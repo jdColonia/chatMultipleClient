@@ -26,19 +26,39 @@ class ClientHandler implements Runnable {
 
     @Override
     public void run() {
-        // Manejar el nombre de usuario del cliente
-        handleClientUsername();
+        handleClientUsername(); // Manejar el nombre de usuario del cliente
+    
         while (clientSocket.isConnected()) {
             try {
-                // Mensaje enviado por el usuario
-                String messageFromClient = in.readLine();
-                // Enviar el mensaje dependiendo del formato
-                chat.handleCommand(messageFromClient, clientUsername);
+                String message = in.readLine(); // Leer el mensaje recibido del cliente
+    
+                if (message.startsWith("/voz")) {
+                    // Procesar la nota de voz recibida
+                    String[] parts = message.split(" ", 3);
+                    String username = parts[1];
+                    byte[] audioData = parseByteArray(parts[2]);
+    
+                    // Reproducir la nota de voz
+                    chat.broadcastVoiceMessage(username, audioData); // Método a implementar en ChatServer
+                } else {
+                    // Procesar mensajes de texto normales
+                    chat.handleCommand(message, clientUsername); // Manejar el comando recibido
+                }
             } catch (IOException e) {
                 closeEveryThing(clientSocket, in, out);
                 break;
             }
         }
+    }
+    
+    private byte[] parseByteArray(String arrayString) {
+        // Convertir la cadena de bytes a un array de bytes
+        String[] byteValues = arrayString.substring(1, arrayString.length() - 1).split(", ");
+        byte[] bytes = new byte[byteValues.length];
+        for (int i = 0; i < byteValues.length; i++) {
+            bytes[i] = Byte.parseByte(byteValues[i]);
+        }
+        return bytes;
     }
 
     public void handleClientUsername() {

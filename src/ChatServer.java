@@ -126,6 +126,26 @@ public class ChatServer {
         }
     }
     
+    public void broadcastVoiceMessage(String username, byte[] audioData) {
+        User user = getUser(username);
+        if (user != null) {
+            user.receiveVoiceMessage(audioData); // Llama al método para recibir y reproducir la nota de voz
+        } else {
+            System.err.println("Usuario no encontrado: " + username);
+        }
+    }
+    
+    // Método para transmitir una nota de voz a un grupo
+    public void broadcastGroupVoiceMessage(String groupName, byte[] audioData) {
+        Group group = getGroup(groupName);
+        if (group != null) {
+            for (User user : group.getMembers()) {
+                user.receiveVoiceMessage(audioData); // Llama al método para recibir y reproducir la nota de voz
+            }
+        } else {
+            System.err.println("Grupo no encontrado: " + groupName);
+        }
+    }
 
     public void showHistory(User user) {
         for (String message : history) {
