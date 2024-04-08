@@ -1,9 +1,14 @@
+import java.io.ByteArrayInputStream;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import javax.sound.sampled.AudioFormat;
+import javax.sound.sampled.AudioInputStream;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.DataLine;
+import javax.sound.sampled.SourceDataLine;
 
 public class ChatServer {
     private Map<String, User> users;
@@ -64,7 +69,8 @@ public class ChatServer {
         if (user != null && group != null) {
             if (!group.getMembers().contains(user)) {
                 group.addMember(user);
-                broadcastGroupMessage("[SERVIDOR] Bienvenido/a al grupo " + groupName + ", " + username + " se ha unido.", group);
+                broadcastGroupMessage(
+                        "[SERVIDOR] Bienvenido/a al grupo " + groupName + ", " + username + " se ha unido.", group);
             } else {
                 user.getOut().println("[SERVIDOR] Ya eres miembro del grupo " + groupName);
             }
@@ -99,7 +105,7 @@ public class ChatServer {
         history.add(message);
     }
 
-        // Enviar un mensaje de broadcast a un remitente en especifico
+    // Enviar un mensaje de broadcast a un remitente en especifico
     public void broadcastPrivateMessage(String sourceName, String message) {
         User user = users.get(sourceName);
         if (user != null) {
@@ -110,7 +116,7 @@ public class ChatServer {
         }
     }
 
-        // Enviar un mensaje privado a la persona con un nombre dado
+    // Enviar un mensaje privado a la persona con un nombre dado
     public void sendPrivateMessage(String sourceName, String targetName, String message) {
         User source = getUser(sourceName);
         User target = getUser(targetName);
@@ -174,6 +180,9 @@ public class ChatServer {
             case "/history":
                 showHistory(sourceName);
                 break;
+            case "/call":
+                handleVoiceCall(parts, sourceName);
+                break;
             case "/exit":
                 handleExit(sourceName);
                 break;
@@ -182,6 +191,34 @@ public class ChatServer {
                 break;
         }
     }
+
+    public void handleVoiceCall(String[] parts, String sourceName) {
+        if (parts.length == 2) {
+            String targetName = parts[1];
+            User sourceUser = getUser(sourceName);
+            User targetUser = getUser(targetName);
+
+            if (sourceUser != null && targetUser != null) {
+                // Notificar al cliente receptor sobre la llamada entrante
+                targetUser.getOut().println("[Llamada entrante de " + sourceName + "]");
+
+                // Iniciar la grabación de audio en el cliente que llama
+                RecordAudio recorder = new RecordAudio(this, targetName);
+                recordingInstances.put(sourceName, recorder);
+                sourceUser.getOut().println("[SERVIDOR] Grabando audio...");
+                sourceUser.getOut().println("[SERVIDOR] Ingrese 'stop' para detener la grabación.");
+                recorder.startRecording();
+            } else {
+                if (targetUser == null) {
+                    sourceUser.getOut().println("[SERVIDOR] El usuario " + targetName + " no está disponible.");
+                }
+            }
+        } else {
+            getUser(sourceName).getOut().println("[SERVIDOR] Comando de llamada mal formateado. Uso: /call <usuario_destino>");
+        }
+    }
+
+    
 
     private void handleTextMessage(String[] parts, String sourceName) {
         if (parts.length == 3) {
@@ -207,9 +244,9 @@ public class ChatServer {
             if (targetName.equals("all")) {
                 recorder = new RecordAudio(this, null);
             }
-            if (!targetName.equals("all") && !targetName.equals(null)){
+            if (!targetName.equals("all") && !targetName.equals(null)) {
                 recorder = new RecordAudio(this, targetName);
-            }else {
+            } else {
                 User target = getUser(targetName);
                 if (target == null) {
                     source.getOut().println("[SERVIDOR] El usuario " + targetName + " no está conectado.");
@@ -224,7 +261,7 @@ public class ChatServer {
             history.add("[SERVIDOR] " + sourceName + " ha enviado un audio.");
         }
     }
-    
+
     private void handleGroupVoiceMessage(String[] parts, String sourceName) {
         if (parts.length == 2) {
             String groupName = parts[1];
@@ -237,8 +274,7 @@ public class ChatServer {
             if (!group.getMembers().contains(source)) {
                 source.getOut().println("[SERVIDOR] No eres miembro del grupo " + groupName);
                 return;
-            }
-            else{
+            } else {
                 RecordAudio recorder = new RecordAudio(this, null);
                 recordingInstances.put(sourceName, recorder);
                 source.getOut().println("[SERVIDOR] Grabando audio para el grupo " + groupName + "...");
