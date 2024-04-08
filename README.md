@@ -3,7 +3,7 @@ Aplicación de chat implementada en Java que permite a los usuarios comunicarse 
 
 # Integrantes:
 
-- Juan David Colonia - A0039
+- Juan David Colonia - A00395956
 - David Santiago Malte - A0039
 - David Henao Salazar - A00394033
 
