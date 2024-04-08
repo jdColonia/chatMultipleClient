@@ -63,12 +63,11 @@ class ClientHandler implements Runnable {
     public void showInstructions(String clientUsername) {
         out.println("----------------------------------------------------------------------------------------------");
         out.println("[SERVIDOR]:");
-        out.println("Bienvenido al chat " + clientUsername + "!");
+        out.println("Bienvenido/a al chat " + clientUsername + "!");
         out.println("Para enviar un mensaje a todos, solo escribe el mensaje y presiona Enter.");
         out.println("Para enviar un mensaje privado, escribe: /msg <usuario_destino> <mensaje>");
-        out.println("Para enviar un mensaje de voz a todo el chat, escribe: /voice all");
-        out.println("Para enviar un mensaje de voz privado, escribe: /voice <usuario_destino>");
         out.println("Para enviar un mensaje a un grupo, escribe: /msggroup <nombre_grupo> <mensaje>");
+        out.println("Para enviar un mensaje de voz a todo el chat, escribe: /voice all");
         out.println("Para enviar un mensaje de voz a un grupo, escribe: /voicegroup <nombre_grupo>");
         out.println("Para crear un nuevo grupo, escribe: /creategroup <nombre_grupo>");
         out.println("Para unirte a un grupo, escribe: /join <nombre_grupo>");

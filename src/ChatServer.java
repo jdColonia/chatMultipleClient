@@ -53,7 +53,7 @@ public class ChatServer {
         User creator = getUser(creatorUsername);
         if (creator != null) {
             group.addMember(creator);
-            creator.getOut().println("[SERVIDOR] Grupo " + groupName + " creado exitosamente. ¡Bienvenido/a al grupo!");
+            creator.getOut().println("[SERVIDOR] Grupo " + groupName + " creado exitosamente. Bienvenido/a al grupo!");
         }
     }
 
@@ -207,6 +207,7 @@ public class ChatServer {
             source.getOut().println("[SERVIDOR] Grabando audio...");
             source.getOut().println("[SERVIDOR] Ingrese 'stop' para detener la grabación.");
             recorder.startRecording();
+            history.add("[SERVIDOR] " + sourceName + " ha enviado un audio.");
         }
     }
     
@@ -228,6 +229,7 @@ public class ChatServer {
             source.getOut().println("[SERVIDOR] Grabando audio para el grupo " + groupName + "...");
             source.getOut().println("[SERVIDOR] Ingrese 'stop' para detener la grabación.");
             recorder.startRecording();
+            history.add("[SERVIDOR] " + sourceName + " ha enviado un audio a " + groupName + ".");
         }
     }
 
