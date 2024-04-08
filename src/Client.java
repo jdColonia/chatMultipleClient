@@ -5,14 +5,13 @@ import java.io.PrintWriter;
 import java.net.Socket;
 
 public class Client {
-
     public static final BufferedReader CONSOLE_READER = new BufferedReader(new InputStreamReader(System.in));
     private static final String SERVER_IP = "localhost";
     private static final int PORT = 6789;
     private Socket clientSocket;
     private BufferedReader in;
     private PrintWriter out;
-    private PrintWriter consoleOut; // Nuevo PrintWriter para la consola
+    private PrintWriter consoleOut;
     private String username;
 
     public Client(Socket clientSocket, String username) {
@@ -22,7 +21,7 @@ public class Client {
             // Crear canales de entrada in y de salida out para la comunicación
             this.in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
             this.out = new PrintWriter(clientSocket.getOutputStream(), true);
-            this.consoleOut = new PrintWriter(System.out, true); // Inicializa el nuevo PrintWriter
+            this.consoleOut = new PrintWriter(System.out, true);
         } catch (IOException e) {
             closeEveryThing(clientSocket, in, out);
         }
@@ -33,12 +32,12 @@ public class Client {
         out.flush();
         while (clientSocket.isConnected()) {
             try {
-                String messageToSend = CONSOLE_READER.readLine(); // Lee desde la consola
-                if (!messageToSend.isEmpty()) { // Verificar si el mensaje no está vacío
+                String messageToSend = CONSOLE_READER.readLine();
+                if (!messageToSend.isEmpty()) {
                     out.println(messageToSend);
                     out.flush();
                 } else {
-                    System.out.println("No se pueden enviar mensajes vacíos."); // Mostrar mensaje al usuario
+                    System.out.println("[SERVIDOR] No se pueden enviar mensajes vacíos.");
                 }
             } catch (IOException e) {
                 closeEveryThing(clientSocket, in, out);
@@ -54,7 +53,7 @@ public class Client {
                 while (clientSocket.isConnected()) {
                     try {
                         msgFromServer = in.readLine();
-                        consoleOut.println(msgFromServer); // Imprime en la consola
+                        consoleOut.println(msgFromServer);
                     } catch (IOException e) {
                         closeEveryThing(clientSocket, in, out);
                     }
@@ -88,5 +87,4 @@ public class Client {
         client.listenForMessage();
         client.sendMessage();
     }
-
 }

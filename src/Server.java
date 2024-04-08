@@ -5,7 +5,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class Server {
-
     private static final int PORT = 6789;
     private ServerSocket serverSocket;
     private ExecutorService threadPool;
@@ -46,5 +45,4 @@ public class Server {
         Server server = new Server(serverSocket);
         server.startServer();
     }
-
 }

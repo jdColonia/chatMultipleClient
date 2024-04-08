@@ -1,7 +1,7 @@
 import java.io.PrintWriter;
+import javax.sound.sampled.AudioFormat;
 
 public class User {
-
     private String username; // Nombre de usuario del usuario
     PrintWriter out; // Flujo de salida para enviar mensajes al usuario
 
@@ -20,10 +20,8 @@ public class User {
         return out;
     }
 
-    public void callUser(User receiver) {
-        Call call = new Call(this, receiver);
-    }
-
-    public void receiveCall(User sender) {
-    }
+    public void playAudio(byte[] audioData, AudioFormat format) {
+        PlayerRecording player = new PlayerRecording(format);
+        player.initiateAudio(audioData);
+    }   
 }
