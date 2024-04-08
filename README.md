@@ -7,7 +7,7 @@
 # Integrantes:
 
 - Juan David Colonia - A00395956
-- David Santiago Malte - A0039
+- David Santiago Malte - A00368867
 - David Henao Salazar - A00394033
 
 # Instrucciones de uso del programa:
