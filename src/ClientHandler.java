@@ -5,7 +5,6 @@ import java.io.PrintWriter;
 import java.net.Socket;
 
 class ClientHandler implements Runnable {
-
     private Socket clientSocket; // Socket para la conexión con el cliente
     private BufferedReader in; // Flujo de entrada para leer los mensajes del cliente
     private PrintWriter out; // Flujo de salida para enviar mensajes al cliente
@@ -26,39 +25,19 @@ class ClientHandler implements Runnable {
 
     @Override
     public void run() {
-        handleClientUsername(); // Manejar el nombre de usuario del cliente
-    
+        // Manejar el nombre de usuario del cliente
+        handleClientUsername();
         while (clientSocket.isConnected()) {
             try {
-                String message = in.readLine(); // Leer el mensaje recibido del cliente
-    
-                if (message.startsWith("/voz")) {
-                    // Procesar la nota de voz recibida
-                    String[] parts = message.split(" ", 3);
-                    String username = parts[1];
-                    byte[] audioData = parseByteArray(parts[2]);
-    
-                    // Reproducir la nota de voz
-                    chat.broadcastVoiceMessage(username, audioData); // Método a implementar en ChatServer
-                } else {
-                    // Procesar mensajes de texto normales
-                    chat.handleCommand(message, clientUsername); // Manejar el comando recibido
-                }
+                // Mensaje enviado por el usuario
+                String messageFromClient = in.readLine();
+                // Enviar el mensaje dependiendo del formato
+                chat.handleCommand(messageFromClient, clientUsername);
             } catch (IOException e) {
                 closeEveryThing(clientSocket, in, out);
                 break;
             }
         }
-    }
-    
-    private byte[] parseByteArray(String arrayString) {
-        // Convertir la cadena de bytes a un array de bytes
-        String[] byteValues = arrayString.substring(1, arrayString.length() - 1).split(", ");
-        byte[] bytes = new byte[byteValues.length];
-        for (int i = 0; i < byteValues.length; i++) {
-            bytes[i] = Byte.parseByte(byteValues[i]);
-        }
-        return bytes;
     }
 
     public void handleClientUsername() {
@@ -84,10 +63,13 @@ class ClientHandler implements Runnable {
     public void showInstructions(String clientUsername) {
         out.println("----------------------------------------------------------------------------------------------");
         out.println("[SERVIDOR]:");
-        out.println("¡Bienvenido al chat " + clientUsername + "!");
+        out.println("Bienvenido al chat " + clientUsername + "!");
         out.println("Para enviar un mensaje a todos, solo escribe el mensaje y presiona Enter.");
         out.println("Para enviar un mensaje privado, escribe: /msg <usuario_destino> <mensaje>");
+        out.println("Para enviar un mensaje de voz a todo el chat, escribe: /voice all");
+        out.println("Para enviar un mensaje de voz privado, escribe: /voice <usuario_destino>");
         out.println("Para enviar un mensaje a un grupo, escribe: /msggroup <nombre_grupo> <mensaje>");
+        out.println("Para enviar un mensaje de voz a un grupo, escribe: /voicegroup <nombre_grupo>");
         out.println("Para crear un nuevo grupo, escribe: /creategroup <nombre_grupo>");
         out.println("Para unirte a un grupo, escribe: /join <nombre_grupo>");
         out.println("Para ver el historial de mensajes, escribe: /history");
@@ -114,5 +96,4 @@ class ClientHandler implements Runnable {
             e.printStackTrace();
         }
     }
-
 }

@@ -3,17 +3,19 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import javax.sound.sampled.AudioFormat;
 
 public class ChatServer {
-
     private Map<String, User> users;
     private Map<String, Group> groups;
     private List<String> history;
+    private Map<String, RecordAudio> recordingInstances;
 
     public ChatServer() {
         this.users = new HashMap<>();
         this.groups = new HashMap<>();
         this.history = new ArrayList<>();
+        this.recordingInstances = new HashMap<>();
     }
 
     // Verificar si un usuario existe en el conjunto de clientes
@@ -46,7 +48,7 @@ public class ChatServer {
     public void createGroup(String groupName, String creatorUsername) {
         Group group = new Group(groupName);
         groups.put(groupName, group);
-        
+
         // Agregar al creador del grupo como miembro del grupo
         User creator = getUser(creatorUsername);
         if (creator != null) {
@@ -54,7 +56,6 @@ public class ChatServer {
             creator.getOut().println("[SERVIDOR] Grupo " + groupName + " creado exitosamente. ¡Bienvenido/a al grupo!");
         }
     }
-    
 
     // Añade a un usuario a un grupo
     public void joinGroup(String username, String groupName) {
@@ -75,10 +76,9 @@ public class ChatServer {
     public void broadcastGroupMessage(String message, Group group) {
         for (User user : group.getMembers()) {
             user.getOut().println(message);
-            user.getOut().flush(); // Asegurar que el mensaje se envíe inmediatamente
+            user.getOut().flush();
         }
     }
-    
 
     // Elimina un usuario de un grupo
     public void leaveGroup(String username, String groupName) {
@@ -125,68 +125,147 @@ public class ChatServer {
             }
         }
     }
-    
-    public void broadcastVoiceMessage(String username, byte[] audioData) {
-        User user = getUser(username);
-        if (user != null) {
-            user.receiveVoiceMessage(audioData); // Llama al método para recibir y reproducir la nota de voz
-        } else {
-            System.err.println("Usuario no encontrado: " + username);
-        }
-    }
-    
-    // Método para transmitir una nota de voz a un grupo
-    public void broadcastGroupVoiceMessage(String groupName, byte[] audioData) {
-        Group group = getGroup(groupName);
-        if (group != null) {
-            for (User user : group.getMembers()) {
-                user.receiveVoiceMessage(audioData); // Llama al método para recibir y reproducir la nota de voz
-            }
-        } else {
-            System.err.println("Grupo no encontrado: " + groupName);
+
+    public void broadcastAudio(byte[] audioData, AudioFormat format) {
+        for (User user : users.values()) {
+            user.playAudio(audioData, format);
         }
     }
 
-    public void showHistory(User user) {
+    public void sendPrivateAudio(User target, byte[] audioData, AudioFormat format) {
+        target.playAudio(audioData, format);
+    }
+
+    public void handleCommand(String command, String sourceName) {
+        String[] parts = command.split(" ", 3);
+        switch (parts[0]) {
+            case "/msg":
+                handleTextMessage(parts, sourceName);
+                break;
+            case "/msggroup":
+                handleGroupTextMessage(parts, sourceName);
+                break;
+            case "/voice":
+                handleVoiceMessage(parts, sourceName);
+                break;
+            case "/voicegroup":
+                handleGroupVoiceMessage(parts, sourceName);
+                break;
+            case "stop":
+                handleStopRecording(sourceName);
+                break;
+            case "/creategroup":
+                handleCreateGroup(parts, sourceName);
+                break;
+            case "/join":
+                handleJoinGroup(parts, sourceName);
+                break;
+            case "/history":
+                showHistory(sourceName);
+                break;
+            case "/exit":
+                handleExit(sourceName);
+                break;
+            default:
+                broadcastMessage(sourceName, "[" + sourceName + "]: " + command);
+                break;
+        }
+    }
+
+    private void handleTextMessage(String[] parts, String sourceName) {
+        if (parts.length == 3) {
+            String targetName = parts[1];
+            String message = parts[2];
+            sendPrivateMessage(sourceName, targetName, message);
+        }
+    }
+
+    private void handleGroupTextMessage(String[] parts, String sourceName) {
+        if (parts.length == 3) {
+            String groupName = parts[1];
+            String message = parts[2];
+            sendGroupMessage(sourceName, groupName, message);
+        }
+    }
+
+    private void handleVoiceMessage(String[] parts, String sourceName) {
+        if (parts.length == 2) {
+            String targetName = parts[1];
+            User source = getUser(sourceName);
+            RecordAudio recorder;
+            if (targetName.equals("all")) {
+                recorder = new RecordAudio(this, null);
+            } else {
+                User target = getUser(targetName);
+                if (target == null) {
+                    source.getOut().println("[SERVIDOR] El usuario " + targetName + " no está conectado.");
+                    return;
+                }
+                recorder = new RecordAudio(this, targetName);
+            }
+            recordingInstances.put(sourceName, recorder);
+            source.getOut().println("[SERVIDOR] Grabando audio...");
+            source.getOut().println("[SERVIDOR] Ingrese 'stop' para detener la grabación.");
+            recorder.startRecording();
+        }
+    }
+    
+    private void handleGroupVoiceMessage(String[] parts, String sourceName) {
+        if (parts.length == 2) {
+            String groupName = parts[1];
+            User source = getUser(sourceName);
+            Group group = getGroup(groupName);
+            if (group == null) {
+                source.getOut().println("[SERVIDOR] El grupo " + groupName + " no existe.");
+                return;
+            }
+            if (!group.getMembers().contains(source)) {
+                source.getOut().println("[SERVIDOR] No eres miembro del grupo " + groupName);
+                return;
+            }
+            RecordAudio recorder = new RecordAudio(this, null);
+            recordingInstances.put(sourceName, recorder);
+            source.getOut().println("[SERVIDOR] Grabando audio para el grupo " + groupName + "...");
+            source.getOut().println("[SERVIDOR] Ingrese 'stop' para detener la grabación.");
+            recorder.startRecording();
+        }
+    }
+
+    private void handleStopRecording(String sourceName) {
+        User source = getUser(sourceName);
+        RecordAudio recorder = recordingInstances.get(sourceName);
+        if (recorder != null) {
+            recorder.stopRecording();
+            recordingInstances.remove(sourceName);
+        } else {
+            source.getOut().println("[SERVIDOR] No hay una grabación en curso.");
+        }
+    }
+
+    private void handleCreateGroup(String[] parts, String sourceName) {
+        if (parts.length == 2) {
+            String groupName = parts[1];
+            createGroup(groupName, sourceName);
+        }
+    }
+
+    private void handleJoinGroup(String[] parts, String sourceName) {
+        if (parts.length == 2) {
+            String groupName = parts[1];
+            joinGroup(sourceName, groupName);
+        }
+    }
+
+    private void showHistory(String sourceName) {
+        User user = getUser(sourceName);
         for (String message : history) {
             user.getOut().println(message);
         }
     }
 
-    public void handleCommand(String command, String sourceName) {
-        String[] parts = command.split(" ", 3);
-        if (parts[0].equals("/msg")) {
-            if (parts.length == 3) {
-                String targetName = parts[1];
-                String message = parts[2];
-                sendPrivateMessage(sourceName, targetName, message);
-            }
-        } else if (parts[0].equals("/msggroup")) {
-            if (parts.length == 3) {
-                String groupName = parts[1];
-                String message = parts[2];
-                sendGroupMessage(sourceName, groupName, message);
-            }
-        } else if (parts[0].equals("/creategroup")) {
-            if (parts.length == 2) {
-                String groupName = parts[1];
-                createGroup(groupName, sourceName);
-            }
-        } else if (parts[0].equals("/join")) {
-            if (parts.length == 2) {
-                String groupName = parts[1];
-                joinGroup(sourceName, groupName);
-            }
-        } else if (parts[0].equals("/history")) {
-            User user = getUser(sourceName);
-            showHistory(user);
-        } else if (parts[0].equals("/exit")) {
-            User user = getUser(sourceName);
-            removeUsr(sourceName);
-            user.getOut().println("¡Hasta luego!");
-        } else {
-            broadcastMessage(sourceName, "[" + sourceName + "]: " + command);
-        }
+    private void handleExit(String sourceName) {
+        User user = getUser(sourceName);
+        removeUsr(sourceName);
+        user.getOut().println("¡Hasta luego!");
     }
-
 }

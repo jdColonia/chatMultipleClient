@@ -2,7 +2,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Group {
-
     private String nameGroup; // Nombre del grupo
     private List<User> members; // Lista de miembros del grupo
 
@@ -16,7 +15,7 @@ public class Group {
         return nameGroup;
     }
 
-    // Obtiene los mientos del grupo
+    // Obtiene los miembros del grupo
     public List<User> getMembers() {
         return members;
     }
@@ -30,5 +29,4 @@ public class Group {
     public void removeMember(User user) {
         members.remove(user);
     }
-
 }
