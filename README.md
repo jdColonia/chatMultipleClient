@@ -1,7 +1,8 @@
 # ChatMultipleClient
 
-Aplicación de chat implementada en Java que permite a los usuarios comunicarse entre sí a través de mensajes de texto, notas de voz y llamadas.
-Implementacion realizada con el protocolo de comunicacion TCP para los mensajes de texto y notas de voz, y se utilizó el protocolo de comunicación UDP para las llamadas.
+*Aplicación de chat* implementada en Java que permite a los usuarios *comunicarse entre sí a través de mensajes de texto, notas de voz y llamadas*.
+
+"Implementacion realizada con el protocolo de comunicacion *TCP* para los mensajes de texto y notas de voz, y se utilizó el protocolo de comunicación *UDP* para las llamadas."
 
 # Integrantes:
 
