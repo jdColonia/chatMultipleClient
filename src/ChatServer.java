@@ -99,7 +99,18 @@ public class ChatServer {
         history.add(message);
     }
 
-    // Enviar un mensaje privado a la persona con un nombre dado
+        // Enviar un mensaje de broadcast a un remitente en especifico
+    public void broadcastPrivateMessage(String sourceName, String message) {
+        User user = users.get(sourceName);
+        if (user != null) {
+            user.getOut().println(message); // Envía el mensaje al usuario específico
+            history.add(message);
+        } else {
+            System.out.println("El usuario '" + sourceName + "' no se encontró.");
+        }
+    }
+
+        // Enviar un mensaje privado a la persona con un nombre dado
     public void sendPrivateMessage(String sourceName, String targetName, String message) {
         User source = getUser(sourceName);
         User target = getUser(targetName);
@@ -195,7 +206,10 @@ public class ChatServer {
             RecordAudio recorder;
             if (targetName.equals("all")) {
                 recorder = new RecordAudio(this, null);
-            } else {
+            }
+            if (!targetName.equals("all") && !targetName.equals(null)){
+                recorder = new RecordAudio(this, targetName);
+            }else {
                 User target = getUser(targetName);
                 if (target == null) {
                     source.getOut().println("[SERVIDOR] El usuario " + targetName + " no está conectado.");
@@ -224,12 +238,14 @@ public class ChatServer {
                 source.getOut().println("[SERVIDOR] No eres miembro del grupo " + groupName);
                 return;
             }
-            RecordAudio recorder = new RecordAudio(this, null);
-            recordingInstances.put(sourceName, recorder);
-            source.getOut().println("[SERVIDOR] Grabando audio para el grupo " + groupName + "...");
-            source.getOut().println("[SERVIDOR] Ingrese 'stop' para detener la grabación.");
-            recorder.startRecording();
-            history.add("[SERVIDOR] " + sourceName + " ha enviado un audio a " + groupName + ".");
+            else{
+                RecordAudio recorder = new RecordAudio(this, null);
+                recordingInstances.put(sourceName, recorder);
+                source.getOut().println("[SERVIDOR] Grabando audio para el grupo " + groupName + "...");
+                source.getOut().println("[SERVIDOR] Ingrese 'stop' para detener la grabación.");
+                recorder.startRecording();
+                history.add("[SERVIDOR] " + sourceName + " ha enviado un audio a " + groupName + ".");
+            }
         }
     }
 
