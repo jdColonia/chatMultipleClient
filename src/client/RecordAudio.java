@@ -1,3 +1,4 @@
+package client;
 import java.io.ByteArrayOutputStream;
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioSystem;
@@ -15,14 +16,10 @@ public class RecordAudio implements Runnable {
     private ByteArrayOutputStream out;
     private volatile boolean isRecording = false;
     private TargetDataLine targetLine;
-    private String targetUsername;
-    private ChatServer chatServer;
 
-    public RecordAudio(ChatServer chatServer, String targetUsername) {
+    public RecordAudio() {
         this.format = new AudioFormat(SAMPLE_RATE, SAMPLE_SIZE_IN_BITS, CHANNELS, SIGNED, BIG_ENDIAN);
         this.out = new ByteArrayOutputStream();
-        this.targetUsername = targetUsername;
-        this.chatServer = chatServer;
     }
 
     public void startRecording() {
@@ -32,7 +29,6 @@ public class RecordAudio implements Runnable {
 
     public void stopRecording() {
         isRecording = false;
-        sendAudioData();
     }
 
     @Override
@@ -55,15 +51,6 @@ public class RecordAudio implements Runnable {
             targetLine.close();
         } catch (Exception e) {
             e.printStackTrace();
-        }
-    }
-
-    private void sendAudioData() {
-        byte[] audioData = out.toByteArray();
-        if (targetUsername == null) {
-            chatServer.broadcastAudio(audioData, format);
-        } else {
-            chatServer.sendPrivateAudio(chatServer.getUser(targetUsername), audioData, format);
         }
     }
 }

@@ -1,3 +1,5 @@
+package server;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -32,7 +34,7 @@ class ClientHandler implements Runnable {
                 // Mensaje enviado por el usuario
                 String messageFromClient = in.readLine();
                 // Enviar el mensaje dependiendo del formato
-                chat.handleCommand(messageFromClient, clientUsername);
+                handleCommand(messageFromClient, clientUsername);
             } catch (IOException e) {
                 closeEveryThing(clientSocket, in, out);
                 break;
@@ -46,14 +48,14 @@ class ClientHandler implements Runnable {
             clientUsername = in.readLine().trim();
             // Verifica que el nombre de usuario del nuevo cliente no exista
             while (!clientUsername.isEmpty() && chat.existUsr(clientUsername)) {
-                out.println("[SERVIDOR] El nombre de usuario no está disponible. Por favor, ingresa otro nombre."); // Maneja el caso cuando el nombre de usuario ya existe
-                out.println("[SERVIDOR] Ingrese su nombre de usuario: "); // Solicita de nuevo el nombre si ese nombre ya está en uso
+                out.println("[SERVIDOR] El nombre de usuario no está disponible. Por favor, ingresa otro nombre.");
+                out.println("[SERVIDOR] Ingrese su nombre de usuario: ");
                 clientUsername = in.readLine().trim();
             }
             synchronized (clientUsername) {
                 chat.addUsr(clientUsername, out); // Añade al cliente al chat con su canal de salida out
-                chat.broadcastMessage(clientUsername, "[SERVIDOR] " + clientUsername + " se ha unido al chat."); // Notifica a los demás usuarios sobre el nuevo miembro
-                showInstructions(clientUsername); // Muestra las instrucciones después de unirse al chat
+                chat.broadcastMessage(clientUsername, "[SERVIDOR] " + clientUsername + " se ha unido al chat.");
+                showInstructions(clientUsername);
             }
         } catch (IOException e) {
             closeEveryThing(clientSocket, in, out);
@@ -67,17 +69,46 @@ class ClientHandler implements Runnable {
         out.println("Para enviar un mensaje a todos, solo escribe el mensaje y presiona Enter.");
         out.println("Para enviar un mensaje privado, escribe: /msg <usuario_destino> <mensaje>");
         out.println("Para enviar un mensaje a un grupo, escribe: /msggroup <nombre_grupo> <mensaje>");
-        out.println("Para enviar un mensaje de voz a todo el chat, escribe: /voice all");
         out.println("Para enviar un mensaje de voz privado, escribe: /voice <usuario_destino>");
         out.println("Para enviar un mensaje de voz a un grupo, escribe: /voicegroup <nombre_grupo>");
         out.println("Para crear un nuevo grupo, escribe: /creategroup <nombre_grupo>");
         out.println("Para unirte a un grupo, escribe: /join <nombre_grupo>");
         out.println("Para ver el historial de mensajes, escribe: /history");
-        out.println("Para salir del chat, presione: Control + C");
+        out.println("Para salir del chat, escribe: /exit");
         out.println("----------------------------------------------------------------------------------------------");
         out.flush();
     }
-    
+
+    public void handleCommand(String command, String sourceName) {
+        String[] parts = command.split(" ", 3);
+        switch (parts[0]) {
+            case "/msg":
+                chat.handleTextMessage(parts, sourceName);
+                break;
+            case "/msggroup":
+                chat.handleGroupTextMessage(parts, sourceName);
+                break;
+            case "/voice":
+                chat.handleVoiceMessage(parts, sourceName);
+                break;
+            case "/voicegroup":
+                chat.handleGroupVoiceMessage(parts, sourceName);
+                break;
+            case "/creategroup":
+                chat.handleCreateGroup(parts, sourceName);
+                break;
+            case "/join":
+                chat.handleJoinGroup(parts, sourceName);
+                break;
+            case "/history":
+                chat.showHistory(sourceName);
+                break;
+            default:
+                chat.broadcastMessage(sourceName, "[" + sourceName + "]: " + command);
+                break;
+        }
+    }
+
     public void closeEveryThing(Socket clientSocket, BufferedReader in, PrintWriter out) {
         System.out.println(clientUsername + " ha abandonado el chat.");
         chat.broadcastMessage("[SERVIDOR] " + clientUsername + " ha abandonado el chat.", clientUsername);

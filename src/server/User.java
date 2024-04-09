@@ -1,5 +1,5 @@
+package server;
 import java.io.PrintWriter;
-import javax.sound.sampled.AudioFormat;
 
 public class User {
     private String username; // Nombre de usuario del usuario
@@ -19,9 +19,4 @@ public class User {
     public PrintWriter getOut() {
         return out;
     }
-
-    public void playAudio(byte[] audioData, AudioFormat format) {
-        PlayerRecording player = new PlayerRecording(format);
-        player.initiateAudio(audioData);
-    }   
 }
