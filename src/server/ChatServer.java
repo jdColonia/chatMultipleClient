@@ -144,18 +144,20 @@ public class ChatServer {
         User source = getUser(sourceName);
         User target = getUser(targetName);
         if (source != null && target != null) {
-            target.getPlayerRecording().initiateAudio(audioData);
+            String audioDataStr = "/audiodata " + Base64.getEncoder().encodeToString(audioData);
+            target.getOut().println(audioDataStr);
         }
     }
     
     public void sendGroupAudio(String sourceName, String groupName, byte[] audioData) {
         User source = getUser(sourceName);
         Group group = getGroup(groupName);
+        String audioDataStr = "/audiodata " + Base64.getEncoder().encodeToString(audioData);
         if (source != null && group != null) {
             if (group.getMembers().contains(source)) {
                 for (User user : group.getMembers()) {
                     if (!user.getUsername().equals(sourceName)) {
-                        user.getPlayerRecording().initiateAudio(audioData);
+                        user.getOut().println(audioDataStr);
                     }
                 }
             } else {

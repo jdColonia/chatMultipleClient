@@ -10,7 +10,6 @@ import java.util.Base64;
 public class Client {
     public static final BufferedReader CONSOLE_READER = new BufferedReader(new InputStreamReader(System.in));
     public static final PlayerRecording PLAYER_RECORDING = new PlayerRecording();
-    public static final RecordAudio RECORD_AUDIO = new RecordAudio();
     private static final String SERVER_IP = "localhost";
     private static final int PORT = 3500;
     private Socket clientSocket;
@@ -43,23 +42,36 @@ public class Client {
                         case "/voice":
                             System.out.println("[SERVIDOR] Grabando audio...");
                             System.out.println("[SERVIDOR] Ingrese 'stop' para detener la grabación.");
-                            RECORD_AUDIO.startRecording();
+                            RecordAudio recordAudioPriv = new RecordAudio();
+                            recordAudioPriv.startRecording();
                             String targetName = parts[1];
-                            byte[] audioData = RECORD_AUDIO.getAudioData();
-                            out.println("/voice " + targetName + " " + Base64.getEncoder().encodeToString(audioData));
-                            out.flush();
+                            while (recordAudioPriv.isRecording()) {
+                                String stopCommand = CONSOLE_READER.readLine();
+                                if (stopCommand.equals("stop")) {
+                                    recordAudioPriv.stopRecording();
+                                    byte[] audioData = recordAudioPriv.getAudioData();
+                                    out.println("/voice " + targetName + " " + Base64.getEncoder().encodeToString(audioData));
+                                    out.flush();
+                                    break;
+                                }
+                            }
                             break;
                         case "/voicegroup":
                             System.out.println("[SERVIDOR] Grabando audio...");
                             System.out.println("[SERVIDOR] Ingrese 'stop' para detener la grabación.");
-                            RECORD_AUDIO.startRecording();
+                            RecordAudio recordAudioGroup = new RecordAudio();
+                            recordAudioGroup.startRecording();
                             String groupName = parts[1];
-                            audioData = RECORD_AUDIO.getAudioData();
-                            out.println("/voicegroup " + groupName + " " + Base64.getEncoder().encodeToString(audioData));
-                            out.flush();
-                            break;
-                        case "stop":
-                            RECORD_AUDIO.stopRecording();
+                            while (recordAudioGroup.isRecording()) {
+                                String stopCommand = CONSOLE_READER.readLine();
+                                if (stopCommand.equals("stop")) {
+                                    recordAudioGroup.stopRecording();
+                                    byte[] audioData = recordAudioGroup.getAudioData();
+                                    out.println("/voicegroup " + groupName + " " + Base64.getEncoder().encodeToString(audioData));
+                                    out.flush();
+                                    break;
+                                }
+                            }
                             break;
                         case "/exit":
                             System.exit(0);
@@ -86,7 +98,13 @@ public class Client {
                 while (clientSocket.isConnected()) {
                     try {
                         msgFromServer = in.readLine();
-                        consoleOut.println(msgFromServer);
+                        if (msgFromServer.startsWith("/audiodata")) {
+                            String audioDataStr = msgFromServer.substring("/audiodata ".length());
+                            byte[] audioData = Base64.getDecoder().decode(audioDataStr);
+                            PLAYER_RECORDING.initiateAudio(audioData);
+                        } else {
+                            consoleOut.println(msgFromServer);
+                        }
                     } catch (IOException e) {
                         closeEveryThing(clientSocket, in, out, consoleOut);
                     }
