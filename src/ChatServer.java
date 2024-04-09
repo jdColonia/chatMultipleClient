@@ -201,9 +201,6 @@ public class ChatServer {
             case "/history":
                 showHistory(sourceName);
                 break;
-            case "/exit":
-                handleExit(sourceName);
-                break;
             default:
                 broadcastMessage(sourceName, "[" + sourceName + "]: " + command);
                 break;
@@ -305,11 +302,5 @@ public class ChatServer {
         for (String message : history) {
             user.getOut().println(message);
         }
-    }
-
-    private void handleExit(String sourceName) {
-        User user = getUser(sourceName);
-        removeUsr(sourceName);
-        user.getOut().println("¡Hasta luego!");
     }
 }

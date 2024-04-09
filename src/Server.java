@@ -5,7 +5,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class Server {
-    private static final int PORT = 6789;
+    private static final int PORT = 3500;
     private ServerSocket serverSocket;
     private ExecutorService threadPool;
     ChatServer chat;

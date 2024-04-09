@@ -14,8 +14,8 @@ import javax.sound.sampled.SourceDataLine;
 
 public class Client {
     public static final BufferedReader CONSOLE_READER = new BufferedReader(new InputStreamReader(System.in));
-    private static final String SERVER_IP = "localhost";
-    private static final int PORT = 6789;
+    private static final String SERVER_IP = "172.30.53.201";
+    private static final int PORT = 3500;
     private Socket clientSocket;
     private BufferedReader in;
     private PrintWriter out;
