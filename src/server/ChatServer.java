@@ -169,18 +169,39 @@ public class ChatServer {
     }
 
     public void handleTextMessage(String[] parts, String sourceName) {
+        User source = getUser(sourceName);
         if (parts.length == 3) {
             String targetName = parts[1];
             String message = parts[2];
-            sendPrivateMessage(sourceName, targetName, message);
+            User dest = getUser(targetName);
+            if (dest != null){
+                sendPrivateMessage(sourceName, targetName, message);
+            }
+            else{
+                source.getOut().println("[SERVIDOR] El usuario " + targetName + " no existe.");
+            }
         }
+        else{
+            source.getOut().println("[SERVIDOR] Error en el comando"); 
+        }
+
     }
 
     public void handleGroupTextMessage(String[] parts, String sourceName) {
+        User source = getUser(sourceName);
+        String groupName = parts[1];
         if (parts.length == 3) {
-            String groupName = parts[1];
             String message = parts[2];
-            sendGroupMessage(sourceName, groupName, message);
+            User dest = getUser(groupName);
+            if (dest != null){
+                sendGroupMessage(sourceName, groupName, message);
+            }
+            else{
+                source.getOut().println("[SERVIDOR] El grupo " + groupName + " no existe.");
+            }
+        }
+        else{
+            source.getOut().println("[SERVIDOR] Error en el comando");
         }
     }
 

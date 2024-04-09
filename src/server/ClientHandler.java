@@ -81,6 +81,7 @@ class ClientHandler implements Runnable {
 
     public void handleCommand(String command, String sourceName) {
         String[] parts = command.split(" ", 3);
+        User source = chat.getUser(sourceName);
         switch (parts[0]) {
             case "/msg":
                 chat.handleTextMessage(parts, sourceName);
@@ -103,6 +104,9 @@ class ClientHandler implements Runnable {
             case "/history":
                 chat.showHistory(sourceName);
                 break;
+            case "/":
+                source.getOut().println("[SERVIDOR] Comando invalido");
+                break;
             default:
                 chat.broadcastMessage(sourceName, "[" + sourceName + "]: " + command);
                 break;
@@ -111,7 +115,7 @@ class ClientHandler implements Runnable {
 
     public void closeEveryThing(Socket clientSocket, BufferedReader in, PrintWriter out) {
         System.out.println(clientUsername + " ha abandonado el chat.");
-        chat.broadcastMessage("[SERVIDOR] " + clientUsername + " ha abandonado el chat.", clientUsername);
+        chat.broadcastMessage(clientUsername ,"[SERVIDOR] " + clientUsername + " ha abandonado el chat.");
         chat.removeUsr(clientUsername);
         try {
             if (in != null) {
