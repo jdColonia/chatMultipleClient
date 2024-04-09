@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.util.Base64;
 
 class ClientHandler implements Runnable {
     private Socket clientSocket; // Socket para la conexión con el cliente
@@ -90,10 +91,14 @@ class ClientHandler implements Runnable {
                 chat.handleGroupTextMessage(parts, sourceName);
                 break;
             case "/voice":
-                chat.handleVoiceMessage(parts, sourceName);
+                String targetName = parts[1];
+                byte[] audioData = Base64.getDecoder().decode(parts[2]);
+                chat.sendPrivateAudio(sourceName, targetName, audioData);
                 break;
             case "/voicegroup":
-                chat.handleGroupVoiceMessage(parts, sourceName);
+                String groupName = parts[1];
+                byte[] audioDataGroup = Base64.getDecoder().decode(parts[2]);
+                chat.sendGroupAudio(sourceName, groupName, audioDataGroup);
                 break;
             case "/creategroup":
                 chat.handleCreateGroup(parts, sourceName);

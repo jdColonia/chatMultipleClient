@@ -53,4 +53,8 @@ public class RecordAudio implements Runnable {
             e.printStackTrace();
         }
     }
+
+    public byte[] getAudioData() {
+        return out.toByteArray();
+    }
 }

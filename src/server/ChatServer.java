@@ -140,32 +140,28 @@ public class ChatServer {
         }
     }
 
-    // ------- CORREGIR -------------
-    public void broadcastAudioData(byte[] audioData, AudioFormat format) {
-        String audioDataEncoded = Base64.getEncoder().encodeToString(audioData);
-        for (User user : users.values()) {
-            user.getOut().println("[AUDIO]"); // Indicar al cliente que se enviará un audio
-            user.getOut().println(format.getSampleRate()); // Enviar los parámetros del formato de audio
-            user.getOut().println(format.getSampleSizeInBits());
-            user.getOut().println(format.getChannels());
-            user.getOut().println(format.isBigEndian());
-            user.getOut().println(audioData.length); // Enviar la longitud de los datos de audio
-            user.getOut().println(audioDataEncoded); // Enviar los datos de audio codificados en base64
-            user.getOut().flush();
+    public void sendPrivateAudio(String sourceName, String targetName, byte[] audioData) {
+        User source = getUser(sourceName);
+        User target = getUser(targetName);
+        if (source != null && target != null) {
+            target.getPlayerRecording().initiateAudio(audioData);
         }
     }
-
-    // ------- CORREGIR -------------
-    public void sendPrivateAudioData(User target, byte[] audioData, AudioFormat format) {
-        String audioDataEncoded = Base64.getEncoder().encodeToString(audioData);
-        target.getOut().println("[AUDIO]"); // Indicar al cliente que se enviará un audio
-        target.getOut().println(format.getSampleRate()); // Enviar los parámetros del formato de audio
-        target.getOut().println(format.getSampleSizeInBits());
-        target.getOut().println(format.getChannels());
-        target.getOut().println(format.isBigEndian());
-        target.getOut().println(audioData.length); // Enviar la longitud de los datos de audio
-        target.getOut().println(audioDataEncoded); // Enviar los datos de audio codificados en base64
-        target.getOut().flush();
+    
+    public void sendGroupAudio(String sourceName, String groupName, byte[] audioData) {
+        User source = getUser(sourceName);
+        Group group = getGroup(groupName);
+        if (source != null && group != null) {
+            if (group.getMembers().contains(source)) {
+                for (User user : group.getMembers()) {
+                    if (!user.getUsername().equals(sourceName)) {
+                        user.getPlayerRecording().initiateAudio(audioData);
+                    }
+                }
+            } else {
+                source.getOut().println("[SERVIDOR] No eres miembro del grupo " + groupName);
+            }
+        }
     }
 
     public void handleTextMessage(String[] parts, String sourceName) {
@@ -202,55 +198,6 @@ public class ChatServer {
         }
         else{
             source.getOut().println("[SERVIDOR] Error en el comando");
-        }
-    }
-
-    // ------- CORREGIR -------------
-    public void handleVoiceMessage(String[] parts, String sourceName) {
-        if (parts.length == 2) {
-            String targetName = parts[1];
-            User source = getUser(sourceName);
-            RecordAudio recorder;
-            if (targetName.equals("all")) {
-                recorder = new RecordAudio();
-            } else if (!targetName.equals("all") && !targetName.equals(null)){
-                recorder = new RecordAudio();
-            }else {
-                User target = getUser(targetName);
-                if (target == null) {
-                    source.getOut().println("[SERVIDOR] El usuario " + targetName + " no está conectado.");
-                    return;
-                }
-                recorder = new RecordAudio();
-            }
-            source.getOut().println("[SERVIDOR] Grabando audio...");
-            source.getOut().println("[SERVIDOR] Ingrese 'stop' para detener la grabación.");
-            recorder.startRecording();
-            history.add("[SERVIDOR] " + sourceName + " ha enviado un audio.");
-        }
-    }
-    
-    // ------- CORREGIR -------------
-    public void handleGroupVoiceMessage(String[] parts, String sourceName) {
-        if (parts.length == 2) {
-            String groupName = parts[1];
-            User source = getUser(sourceName);
-            Group group = getGroup(groupName);
-            if (group == null) {
-                source.getOut().println("[SERVIDOR] El grupo " + groupName + " no existe.");
-                return;
-            }
-            if (!group.getMembers().contains(source)) {
-                source.getOut().println("[SERVIDOR] No eres miembro del grupo " + groupName);
-                return;
-            }
-            else{
-                RecordAudio recorder = new RecordAudio();
-                source.getOut().println("[SERVIDOR] Grabando audio para el grupo " + groupName + "...");
-                source.getOut().println("[SERVIDOR] Ingrese 'stop' para detener la grabación.");
-                recorder.startRecording();
-                history.add("[SERVIDOR] " + sourceName + " ha enviado un audio a " + groupName + ".");
-            }
         }
     }
 
