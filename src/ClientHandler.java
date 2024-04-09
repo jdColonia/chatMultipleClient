@@ -73,7 +73,7 @@ class ClientHandler implements Runnable {
         out.println("Para crear un nuevo grupo, escribe: /creategroup <nombre_grupo>");
         out.println("Para unirte a un grupo, escribe: /join <nombre_grupo>");
         out.println("Para ver el historial de mensajes, escribe: /history");
-        out.println("Para salir del chat, escribe: /exit");
+        out.println("Para salir del chat, presione: Control + C");
         out.println("----------------------------------------------------------------------------------------------");
         out.flush();
     }

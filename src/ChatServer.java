@@ -1,5 +1,6 @@
 import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -147,6 +148,32 @@ public class ChatServer {
         target.playAudio(audioData, format);
     }
 
+    public void broadcastAudioData(byte[] audioData, AudioFormat format) {
+        String audioDataEncoded = Base64.getEncoder().encodeToString(audioData);
+        for (User user : users.values()) {
+            user.getOut().println("[AUDIO]"); // Indicar al cliente que se enviará un audio
+            user.getOut().println(format.getSampleRate()); // Enviar los parámetros del formato de audio
+            user.getOut().println(format.getSampleSizeInBits());
+            user.getOut().println(format.getChannels());
+            user.getOut().println(format.isBigEndian());
+            user.getOut().println(audioData.length); // Enviar la longitud de los datos de audio
+            user.getOut().println(audioDataEncoded); // Enviar los datos de audio codificados en base64
+            user.getOut().flush();
+        }
+    }
+
+    public void sendPrivateAudioData(User target, byte[] audioData, AudioFormat format) {
+        String audioDataEncoded = Base64.getEncoder().encodeToString(audioData);
+        target.getOut().println("[AUDIO]"); // Indicar al cliente que se enviará un audio
+        target.getOut().println(format.getSampleRate()); // Enviar los parámetros del formato de audio
+        target.getOut().println(format.getSampleSizeInBits());
+        target.getOut().println(format.getChannels());
+        target.getOut().println(format.isBigEndian());
+        target.getOut().println(audioData.length); // Enviar la longitud de los datos de audio
+        target.getOut().println(audioDataEncoded); // Enviar los datos de audio codificados en base64
+        target.getOut().flush();
+    }
+
     public void handleCommand(String command, String sourceName) {
         String[] parts = command.split(" ", 3);
         switch (parts[0]) {
@@ -173,9 +200,6 @@ public class ChatServer {
                 break;
             case "/history":
                 showHistory(sourceName);
-                break;
-            case "/exit":
-                handleExit(sourceName);
                 break;
             default:
                 broadcastMessage(sourceName, "[" + sourceName + "]: " + command);
@@ -206,8 +230,7 @@ public class ChatServer {
             RecordAudio recorder;
             if (targetName.equals("all")) {
                 recorder = new RecordAudio(this, null);
-            }
-            if (!targetName.equals("all") && !targetName.equals(null)){
+            } else if (!targetName.equals("all") && !targetName.equals(null)){
                 recorder = new RecordAudio(this, targetName);
             }else {
                 User target = getUser(targetName);
@@ -279,11 +302,5 @@ public class ChatServer {
         for (String message : history) {
             user.getOut().println(message);
         }
-    }
-
-    private void handleExit(String sourceName) {
-        User user = getUser(sourceName);
-        removeUsr(sourceName);
-        user.getOut().println("¡Hasta luego!");
     }
 }
