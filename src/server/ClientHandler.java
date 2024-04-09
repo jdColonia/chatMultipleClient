@@ -120,7 +120,7 @@ class ClientHandler implements Runnable {
 
     public void closeEveryThing(Socket clientSocket, BufferedReader in, PrintWriter out) {
         System.out.println(clientUsername + " ha abandonado el chat.");
-        chat.broadcastMessage(clientUsername ,"[SERVIDOR] " + clientUsername + " ha abandonado el chat.");
+        chat.broadcastMessage(clientUsername, "[SERVIDOR] " + clientUsername + " ha abandonado el chat.");
         chat.removeUsr(clientUsername);
         try {
             if (in != null) {

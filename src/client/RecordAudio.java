@@ -1,7 +1,6 @@
 package client;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 
+import java.io.ByteArrayOutputStream;
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.DataLine;

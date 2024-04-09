@@ -1,4 +1,5 @@
 package server;
+
 import java.io.PrintWriter;
 
 public class User {

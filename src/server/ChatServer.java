@@ -1,13 +1,11 @@
 package server;
+
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import javax.sound.sampled.AudioFormat;
-
-import client.RecordAudio;
 
 public class ChatServer {
     private Map<String, User> users;
@@ -146,6 +144,7 @@ public class ChatServer {
         if (source != null && target != null) {
             String audioDataStr = "/audiodata " + Base64.getEncoder().encodeToString(audioData);
             target.getOut().println(audioDataStr);
+            history.add("[SERVIDOR] " + sourceName + " ha enviado un audio.");
         }
     }
     
@@ -160,6 +159,7 @@ public class ChatServer {
                         user.getOut().println(audioDataStr);
                     }
                 }
+                history.add("[SERVIDOR] " + sourceName + " ha enviado un audio a " + groupName + ".");
             } else {
                 source.getOut().println("[SERVIDOR] No eres miembro del grupo " + groupName);
             }
