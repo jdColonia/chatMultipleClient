@@ -1,8 +1,16 @@
 import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.util.Base64;
+
+import javax.sound.sampled.AudioFormat;
+import javax.sound.sampled.AudioInputStream;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.DataLine;
+import javax.sound.sampled.SourceDataLine;
 
 public class Client {
     public static final BufferedReader CONSOLE_READER = new BufferedReader(new InputStreamReader(System.in));
@@ -53,13 +61,58 @@ public class Client {
                 while (clientSocket.isConnected()) {
                     try {
                         msgFromServer = in.readLine();
-                        consoleOut.println(msgFromServer);
+                        if (msgFromServer.equals("[AUDIO]")) {
+                            handleAudioMessage();
+                        } else {
+                            consoleOut.println(msgFromServer);
+                        }
                     } catch (IOException e) {
                         closeEveryThing(clientSocket, in, out);
                     }
                 }
             }
         }).start();
+    }
+
+    private void handleAudioMessage() throws IOException {
+        int sampleRate = Integer.parseInt(in.readLine());
+        int sampleSizeInBits = Integer.parseInt(in.readLine());
+        int channels = Integer.parseInt(in.readLine());
+        boolean bigEndian = Boolean.parseBoolean(in.readLine());
+        int audioDataLength = Integer.parseInt(in.readLine());
+    
+        String audioDataEncoded = in.readLine();
+        byte[] audioData = Base64.getDecoder().decode(audioDataEncoded);
+    
+        if (audioData.length == audioDataLength) {
+            AudioFormat format = new AudioFormat(sampleRate, sampleSizeInBits, channels, true, bigEndian);
+            playAudio(audioData, format);
+        } else {
+            System.err.println("Error al recibir los datos de audio");
+        }
+    }
+    
+    private void playAudio(byte[] audioData, AudioFormat format) {
+        try {
+            AudioInputStream audioInputStream = new AudioInputStream(new ByteArrayInputStream(audioData), format, audioData.length);
+            DataLine.Info dataLineInfo = new DataLine.Info(SourceDataLine.class, format);
+            SourceDataLine sourceDataLine = (SourceDataLine) AudioSystem.getLine(dataLineInfo);
+            sourceDataLine.open(format);
+            sourceDataLine.start();
+    
+            byte[] buffer = new byte[4096];
+            int bytesRead;
+            while ((bytesRead = audioInputStream.read(buffer, 0, buffer.length)) != -1) {
+                sourceDataLine.write(buffer, 0, bytesRead);
+            }
+    
+            sourceDataLine.drain();
+            sourceDataLine.stop();
+            sourceDataLine.close();
+            audioInputStream.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     public void closeEveryThing(Socket clientSocket, BufferedReader in, PrintWriter out) {
