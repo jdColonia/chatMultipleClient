@@ -106,14 +106,13 @@ class ClientHandler implements Runnable {
                 String callTargetName = parts[1];
                 chat.handleCall(sourceName, callTargetName);
                 break;
+            case "/voicedata":
+
+                break;
             case "/callgroup":
                 // llamada grupal
                 String callGroupName = parts[1];
                 chat.handleGroupCall(sourceName, callGroupName);
-                break;
-            case "/callgroupend":
-                callGroupName = parts[1];
-                chat.handleGroupCallEnd(sourceName, callGroupName);
                 break;
             case "/creategroup":
                 chat.handleCreateGroup(parts, sourceName);

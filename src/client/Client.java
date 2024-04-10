@@ -53,9 +53,7 @@ public class Client {
                             break;
                         case "/call":
                             String callTargetName = parts[1];
-                            // Obtener el puerto local del cliente
-                            int localPort = clientSocket.getLocalPort();
-                            call(callTargetName, localPort); // Pasar el puerto local al método call
+                            call(callTargetName);
                             break;
                         case "/callgroup":
                             System.out.println("[SERVIDOR] Iniciando llamada grupal...");
@@ -78,24 +76,6 @@ public class Client {
         }
     }
 
-    private void voiceGroup(String groupName) throws IOException {
-        System.out.println("[SERVIDOR] Grabando audio...");
-        System.out.println("[SERVIDOR] Ingrese 'stop' para detener la grabación.");
-        RecordAudio recordAudioGroup = new RecordAudio();
-        recordAudioGroup.startRecording();
-        while (recordAudioGroup.isRecording()) {
-            String stopCommand = CONSOLE_READER.readLine();
-            if (stopCommand.equals("stop")) {
-                recordAudioGroup.stopRecording();
-                byte[] audioData = recordAudioGroup.getAudioData();
-                out.println("/voicegroup " + groupName + " "
-                        + Base64.getEncoder().encodeToString(audioData));
-                out.flush();
-                break;
-            }
-        }
-    }
-
     private void voiceMessage(String targetName) throws IOException {
         System.out.println("[SERVIDOR] Grabando audio...");
         System.out.println("[SERVIDOR] Ingrese 'stop' para detener la grabación.");
@@ -114,40 +94,38 @@ public class Client {
         }
     }
 
-    public void call(String target, int localPort) {
-        try {
-            System.out.println("[SERVIDOR] Iniciando llamada...");
-            System.out.println("[SERVIDOR] Ingrese '/callend' para detener la llamada.");
-            System.out.println("[SERVIDOR] Llamada iniciada con " + target);
-
-            // Crear y ejecutar el hilo de la llamada
-            voiceCallThread = new VoiceCallThread(this);
-            voiceCallThread.start();
-
-            // Mantener la llamada activa
-            while (true) {
-                // Leer datos del servidor
-                String input = in.readLine();
-                if (input == null) {
-                    break; // Terminar si la conexión se cerró
-                }
-                // Verificar si los datos recibidos son de audio
-                if (input.startsWith("/audiodata")) {
-                    String audioDataStr = input.substring("/audiodata ".length());
-                    byte[] audioData = Base64.getDecoder().decode(audioDataStr);
-                    // Reproducir audio recibido
-                    PLAYER_RECORDING.initiateAudio(audioData);
-                } else if (input.equals("/callend")) {
-                    // Terminar la llamada si se recibe la señal de finalización
-                    System.out.println("[SERVIDOR] Llamada finalizada.");
-                    break;
-                }
+    private void voiceGroup(String groupName) throws IOException {
+        System.out.println("[SERVIDOR] Grabando audio...");
+        System.out.println("[SERVIDOR] Ingrese 'stop' para detener la grabación.");
+        RecordAudio recordAudioGroup = new RecordAudio();
+        recordAudioGroup.startRecording();
+        while (recordAudioGroup.isRecording()) {
+            String stopCommand = CONSOLE_READER.readLine();
+            if (stopCommand.equals("stop")) {
+                recordAudioGroup.stopRecording();
+                byte[] audioData = recordAudioGroup.getAudioData();
+                out.println("/voicegroup " + groupName + " "
+                        + Base64.getEncoder().encodeToString(audioData));
+                out.flush();
+                break;
             }
-        } catch (IOException | LineUnavailableException e) {
-            closeEveryThing(clientSocket, in, out, consoleOut);
         }
     }
 
+    public void call(String target) {
+        System.out.println("[SERVIDOR] Iniciando llamada...");
+        System.out.println("[SERVIDOR] Ingrese '/callend' para detener la llamada.");
+        System.out.println("[SERVIDOR] Llamada iniciada con " + target);
+        // Crear y ejecutar el hilo de la llamada
+        try {
+            voiceCallThread = new VoiceCallThread(this);
+        } catch (LineUnavailableException e) {
+            e.printStackTrace();
+        }
+        voiceCallThread.start();
+    }
+
+    // EN CLIENTHANDLER NO HAY UN CASO PARA MANEJAR ESTO, POR ESO NO SE ESCUCHA
     public void sendVoiceData(byte[] audioData) {
         out.println("/voicedata " + Base64.getEncoder().encodeToString(audioData));
         out.flush();
@@ -170,13 +148,6 @@ public class Client {
                             case "/incomingcall":
                                 String callerName = in.readLine();
                                 System.out.println("[SERVIDOR] Llamada entrante de " + callerName);
-                                // Aquí puedes agregar lógica para notificar al usuario y solicitar su
-                                // aceptación
-                                break;
-                            case "/callsocketinfo":
-                                int targetPort = Integer.parseInt(in.readLine());
-                                // Utilizar el puerto para configurar el socket UDP del cliente
-                                // configureVoiceCallSocket(targetPort);
                                 break;
                             case "/audiodata":
                                 String audioDataStr = msgFromServer.substring("/audiodata ".length());
@@ -184,10 +155,12 @@ public class Client {
                                 PLAYER_RECORDING.initiateAudio(audioData);
                                 break;
                             case "/voicedata":
-                                audioDataStr = msgFromServer.substring("/voicedata ".length());
-                                audioData = Base64.getDecoder().decode(audioDataStr);
-                                // Reproducir audio recibido
-                                PLAYER_RECORDING.initiateAudio(audioData);
+                                String voiceDataStr = msgFromServer.substring("/voicedata ".length());
+                                byte[] voiceData = Base64.getDecoder().decode(voiceDataStr);
+                                PLAYER_RECORDING.initiateAudio(voiceData);
+                                break;
+                            case "/callend":
+                                System.out.println("[SERVIDOR] Llamada finalizada.");
                                 break;
                             default:
                                 consoleOut.println(msgFromServer);
