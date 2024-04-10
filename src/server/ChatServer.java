@@ -14,11 +14,13 @@ public class ChatServer {
     private Map<String, User> users;
     private Map<String, Group> groups;
     private List<String> history;
+    private Map<String, User> activeCallers;
 
     public ChatServer() {
         this.users = new HashMap<>();
         this.groups = new HashMap<>();
         this.history = new ArrayList<>();
+        this.activeCallers = new HashMap<>();
     }
 
     // Verificar si un usuario existe en el conjunto de clientes
@@ -67,7 +69,8 @@ public class ChatServer {
         if (user != null && group != null) {
             if (!group.getMembers().contains(user)) {
                 group.addMember(user);
-                broadcastGroupMessage("[SERVIDOR] Bienvenido/a al grupo " + groupName + ", " + username + " se ha unido.", group);
+                broadcastGroupMessage(
+                        "[SERVIDOR] Bienvenido/a al grupo " + groupName + ", " + username + " se ha unido.", group);
             } else {
                 user.getOut().println("[SERVIDOR] Ya eres miembro del grupo " + groupName);
             }
@@ -150,7 +153,7 @@ public class ChatServer {
             history.add("[SERVIDOR] " + sourceName + " ha enviado un audio.");
         }
     }
-    
+
     public void sendGroupAudio(String sourceName, String groupName, byte[] audioData) {
         User source = getUser(sourceName);
         Group group = getGroup(groupName);
@@ -168,48 +171,103 @@ public class ChatServer {
             }
         }
     }
-    
-    // Se encarga de notificar una llamada
-    public void handleCall(String sourceName, String targetName) {
-        User source = getUser(sourceName);
+
+    public void handleIncomingCall(String callerName, String targetName) {
+        User caller = getUser(callerName);
         User target = getUser(targetName);
-        if (source != null && target != null) {
-            source.getOut().println("/callstarted " + targetName);
-            target.getOut().println("/incomingcall " + sourceName);
+        if (caller != null && target != null) {
+            // Almacenar la información de la llamada activa
+            activeCallers.put(callerName, target);
+
+            // Notificar al usuario destino sobre la llamada entrante
+            target.getOut().println("/incomingcall " + callerName);
+            target.getOut().flush();
         } else {
-            if (source != null) {
-                source.getOut().println("[SERVIDOR] El usuario " + targetName + " no está conectado.");
+            if (caller != null) {
+                caller.getOut().println("[SERVIDOR] El usuario " + targetName + " no está conectado.");
+                caller.getOut().flush();
             }
         }
     }
 
-    // Notifica llamadas grupales
-    public void handleGroupCall(String sourceName, String groupName) {
-        Group group = getGroup(groupName);
-        if (group != null) {
-            for (User user : group.getMembers()) {
-                user.getOut().println("/callgroupstarted " + groupName);
-            }
+    public void handleAcceptCall(String callerName, String targetName) {
+        User caller = activeCallers.get(callerName);
+        if (caller != null && caller.getUsername().equals(targetName)) {
+            // Notificar a ambos usuarios que la llamada ha comenzado
+            caller.getOut().println("/callstarted " + targetName);
+            caller.getOut().flush();
+            activeCallers.get(callerName).getOut().println("/callstarted " + callerName);
+            activeCallers.get(callerName).getOut().flush();
         } else {
-            getUser(sourceName).getOut().println("[SERVIDOR] El grupo " + groupName + " no existe.");
+            User target = getUser(targetName);
+            if (target != null) {
+                target.getOut().println("[SERVIDOR] La llamada de " + callerName + " no existe.");
+                target.getOut().flush();
+            }
         }
     }
-    
+
+    public void handleRejectCall(String callerName, String targetName) {
+        User caller = activeCallers.get(callerName);
+        if (caller != null && caller.getUsername().equals(targetName)) {
+            // Notificar al usuario que la llamada ha sido rechazada
+            caller.getOut().println("[SERVIDOR] La llamada con " + targetName + " ha sido rechazada.");
+            caller.getOut().flush();
+            activeCallers.remove(callerName);
+        } else {
+            User target = getUser(targetName);
+            if (target != null) {
+                target.getOut().println("[SERVIDOR] La llamada de " + callerName + " no existe.");
+                target.getOut().flush();
+            }
+        }
+    }
+
+    public void handleVoiceData(String sourceName, byte[] audioData) {
+        User target = activeCallers.get(sourceName);
+        if (target != null) {
+            String audioDataStr = "/voicedata " + Base64.getEncoder().encodeToString(audioData);
+            target.getOut().println(audioDataStr);
+            target.getOut().flush();
+        } else {
+            User source = getUser(sourceName);
+            if (source != null) {
+                source.getOut().println("[SERVIDOR] No hay una llamada activa.");
+                source.getOut().flush();
+            }
+        }
+    }
+
+    public void handleCallEnd(String sourceName) {
+        User target = activeCallers.get(sourceName);
+        if (target != null) {
+            target.getOut().println("/callend");
+            target.getOut().flush();
+            activeCallers.remove(sourceName);
+        } else {
+            User source = getUser(sourceName);
+            if (source != null) {
+                source.getOut().println("[SERVIDOR] No hay una llamada activa.");
+                source.getOut().flush();
+            }
+        }
+    }
+
+
+
     public void handleTextMessage(String[] parts, String sourceName) {
         User source = getUser(sourceName);
         if (parts.length == 3) {
             String targetName = parts[1];
             String message = parts[2];
             User dest = getUser(targetName);
-            if (dest != null){
+            if (dest != null) {
                 sendPrivateMessage(sourceName, targetName, message);
-            }
-            else{
+            } else {
                 source.getOut().println("[SERVIDOR] El usuario " + targetName + " no existe.");
             }
-        }
-        else{
-            source.getOut().println("[SERVIDOR] Error en el comando"); 
+        } else {
+            source.getOut().println("[SERVIDOR] Error en el comando");
         }
 
     }
@@ -220,14 +278,12 @@ public class ChatServer {
         if (parts.length == 3) {
             String message = parts[2];
             User dest = getUser(groupName);
-            if (dest != null){
+            if (dest != null) {
                 sendGroupMessage(sourceName, groupName, message);
-            }
-            else{
+            } else {
                 source.getOut().println("[SERVIDOR] El grupo " + groupName + " no existe.");
             }
-        }
-        else{
+        } else {
             source.getOut().println("[SERVIDOR] Error en el comando");
         }
     }

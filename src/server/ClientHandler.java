@@ -102,17 +102,24 @@ class ClientHandler implements Runnable {
                 chat.sendGroupAudio(sourceName, groupName, audioDataGroup);
                 break;
             case "/call":
-                // llamada
                 String callTargetName = parts[1];
-                chat.handleCall(sourceName, callTargetName);
+                chat.handleIncomingCall(sourceName, callTargetName);
+                break;
+            case "/accept":
+                String callerName = parts[1];
+                chat.handleAcceptCall(callerName, sourceName);
+                break;
+            case "/reject":
+                String rejectCallerName = parts[1];
+                chat.handleAcceptCall(rejectCallerName, sourceName);
                 break;
             case "/voicedata":
-
+                String audioDataStr = command.substring("/voicedata ".length());
+                byte[] callAudioData = Base64.getDecoder().decode(audioDataStr);
+                chat.handleVoiceData(sourceName, callAudioData);
                 break;
-            case "/callgroup":
-                // llamada grupal
-                String callGroupName = parts[1];
-                chat.handleGroupCall(sourceName, callGroupName);
+            case "/callend":
+                chat.handleCallEnd(sourceName);
                 break;
             case "/creategroup":
                 chat.handleCreateGroup(parts, sourceName);
@@ -123,8 +130,8 @@ class ClientHandler implements Runnable {
             case "/history":
                 chat.showHistory(sourceName);
                 break;
-            case "/":
-                source.getOut().println("[SERVIDOR] Comando invalido");
+            case "/exit":
+                closeEveryThing(clientSocket, in, out);
                 break;
             default:
                 chat.broadcastMessage(sourceName, "[" + sourceName + "]: " + command);

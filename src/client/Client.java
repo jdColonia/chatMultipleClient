@@ -5,7 +5,9 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.DatagramSocket;
+import java.net.InetAddress;
 import java.net.Socket;
+import java.net.SocketException;
 import java.util.Base64;
 
 import javax.sound.sampled.LineUnavailableException;
@@ -20,7 +22,8 @@ public class Client {
     private PrintWriter out;
     private PrintWriter consoleOut;
     private String username;
-    private VoiceCallThread voiceCallThread;
+    private Thread voiceCallThread;
+    private boolean isCallActive = false;
 
     public Client(Socket clientSocket, String username) {
         try {
@@ -112,25 +115,47 @@ public class Client {
         }
     }
 
-    public void call(String target) {
-        System.out.println("[SERVIDOR] Iniciando llamada...");
-        System.out.println("[SERVIDOR] Ingrese '/callend' para detener la llamada.");
-        System.out.println("[SERVIDOR] Llamada iniciada con " + target);
+    public void call(String targetName) throws SocketException {
+        DatagramSocket voiceSocket = new DatagramSocket();
         // Crear y ejecutar el hilo de la llamada
-        try {
-            voiceCallThread = new VoiceCallThread(this);
-        } catch (LineUnavailableException e) {
-            e.printStackTrace();
-        }
+        voiceCallThread = new Thread(() -> {
+            try {
+                // Establecer la conexión de voz con el servidor
+                out.println("/call " + targetName); // Envía el comando de llamada con el nombre del cliente
+                out.flush();
+                isCallActive = true;
+                
+                // Enviar datos de audio al servidor
+                RecordAudio recordAudio = new RecordAudio();
+                recordAudio.startRecording();
+                
+                while (isCallActive) {
+                    String stopCommand = CONSOLE_READER.readLine();
+                    if (stopCommand.equals("/callend")) {
+                        recordAudio.stopRecording();
+                        byte[] audioData = recordAudio.getAudioData();
+                        sendVoiceData(audioData, targetName); // Envía los datos de audio junto con el nombre del cliente
+                        isCallActive = false;
+                        break;
+                    } else {
+                        byte[] audioData = recordAudio.getAudioData();
+                        sendVoiceData(audioData, targetName); // Envía los datos de audio junto con el nombre del cliente
+                    }
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        });
         voiceCallThread.start();
+        System.out.println("[SERVIDOR] Iniciando llamada con " + targetName);
+        System.out.println("[SERVIDOR] Ingrese '/callend' para detener la llamada.");
     }
-
-    // EN CLIENTHANDLER NO HAY UN CASO PARA MANEJAR ESTO, POR ESO NO SE ESCUCHA
-    public void sendVoiceData(byte[] audioData) {
-        out.println("/voicedata " + Base64.getEncoder().encodeToString(audioData));
+    
+    public void sendVoiceData(byte[] audioData, String targetName) {
+        out.println("/voicedata " + targetName + " " + Base64.getEncoder().encodeToString(audioData));
         out.flush();
     }
-
+    
 
     public void listenForMessage() {
         new Thread(new Runnable() {
@@ -144,10 +169,12 @@ public class Client {
                             case "/callstarted":
                                 String targetName = in.readLine();
                                 System.out.println("[SERVIDOR] Llamada iniciada con " + targetName);
+                                isCallActive = true;
                                 break;
                             case "/incomingcall":
                                 String callerName = in.readLine();
                                 System.out.println("[SERVIDOR] Llamada entrante de " + callerName);
+                                // LOGICA PARA ACEPTAR O RECHAZAR LLAMADA
                                 break;
                             case "/audiodata":
                                 String audioDataStr = msgFromServer.substring("/audiodata ".length());
@@ -161,6 +188,7 @@ public class Client {
                                 break;
                             case "/callend":
                                 System.out.println("[SERVIDOR] Llamada finalizada.");
+                                isCallActive = false;
                                 break;
                             default:
                                 consoleOut.println(msgFromServer);
