@@ -1,6 +1,9 @@
 package server;
 
+import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.PrintWriter;
+import java.net.DatagramPacket;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashMap;
@@ -24,8 +27,8 @@ public class ChatServer {
     }
 
     // Agregar un usuario al conjunto de clientes
-    public void addUsr(String username, PrintWriter out) {
-        User user = new User(username, out);
+    public void addUsr(String username, PrintWriter out, BufferedReader in) {
+        User user = new User(username, out, in);
         users.put(username, user);
     }
 
@@ -165,6 +168,67 @@ public class ChatServer {
             }
         }
     }
+
+    
+    public void handleCall(String sourceName, String targetName) {
+        User source = getUser(sourceName);
+        User target = getUser(targetName);
+    
+        if (source != null && target != null) {
+            // Notificar a los usuarios que se ha iniciado la llamada
+            source.getOut().println("/callstarted " + targetName);
+            target.getOut().println("/incomingcall " + sourceName);
+    
+            // Enviar la información necesaria para que el cliente inicie la llamada
+            // source.getOut().println("/callsocketinfo " + target.getLocalPort());
+            // target.getOut().println("/callsocketinfo " + source.getLocalPort());
+        } else {
+            if (source != null) {
+                source.getOut().println("[SERVIDOR] El usuario " + targetName + " no está conectado.");
+            }
+        }
+    }
+
+    public void handleGroupCall(String sourceName, String groupName) {
+        Group group = getGroup(groupName);
+        if (group != null) {
+            for (User user : group.getMembers()) {
+                user.getOut().println("/callgroupstarted " + groupName);
+            }
+            // Aquí puedes agregar la lógica para establecer la comunicación de voz/video
+        } else {
+            getUser(sourceName).getOut().println("[SERVIDOR] El grupo " + groupName + " no existe.");
+        }
+    }
+    
+    // En caso de que no funcione en client
+    public void handleCallEnd(String sourceName, String callTargetName) {
+        User source = getUser(sourceName);
+        User target = getUser(callTargetName);
+        if (source != null && target != null) {
+            source.getOut().println("[SERVIDOR] Llamada finalizada con: " + callTargetName);
+            target.getOut().println("[SERVIDOR] Llamada finalizada.");
+            // Aquí puedes agregar la lógica para finalizar la comunicación de voz/video
+        } else {
+            if (source != null) {
+                source.getOut().println("[SERVIDOR] El usuario " + callTargetName + " no está conectado.");
+            }
+        }
+    }
+
+    public void handleGroupCallEnd(String sourceName, String callGroupName) {
+        Group group = getGroup(callGroupName);
+        if (group != null) {
+            for (User user : group.getMembers()) {
+                user.getOut().println("/callgroupend " + callGroupName);
+            }
+            // Aquí puedes agregar la lógica para finalizar la comunicación de voz/video grupal
+        } else {
+            getUser(sourceName).getOut().println("[SERVIDOR] El grupo " + callGroupName + " no existe.");
+        }
+    }
+    
+
 
     public void handleTextMessage(String[] parts, String sourceName) {
         User source = getUser(sourceName);

@@ -54,7 +54,7 @@ class ClientHandler implements Runnable {
                 clientUsername = in.readLine().trim();
             }
             synchronized (clientUsername) {
-                chat.addUsr(clientUsername, out); // Añade al cliente al chat con su canal de salida out
+                chat.addUsr(clientUsername, out, in); // Añade al cliente al chat con su canal de salida out
                 chat.broadcastMessage(clientUsername, "[SERVIDOR] " + clientUsername + " se ha unido al chat.");
                 showInstructions(clientUsername);
             }
@@ -72,6 +72,7 @@ class ClientHandler implements Runnable {
         out.println("Para enviar un mensaje a un grupo, escribe: /msggroup <nombre_grupo> <mensaje>");
         out.println("Para enviar un mensaje de voz privado, escribe: /voice <usuario_destino>");
         out.println("Para enviar un mensaje de voz a un grupo, escribe: /voicegroup <nombre_grupo>");
+        out.println("Para realizar una llamada de voz privada, escribe: /call <usuario_destino>");
         out.println("Para crear un nuevo grupo, escribe: /creategroup <nombre_grupo>");
         out.println("Para unirte a un grupo, escribe: /join <nombre_grupo>");
         out.println("Para ver el historial de mensajes, escribe: /history");
@@ -99,6 +100,20 @@ class ClientHandler implements Runnable {
                 String groupName = parts[1];
                 byte[] audioDataGroup = Base64.getDecoder().decode(parts[2]);
                 chat.sendGroupAudio(sourceName, groupName, audioDataGroup);
+                break;
+            case "/call":
+                // llamada
+                String callTargetName = parts[1];
+                chat.handleCall(sourceName, callTargetName);
+                break;
+            case "/callgroup":
+                // llamada grupal
+                String callGroupName = parts[1];
+                chat.handleGroupCall(sourceName, callGroupName);
+                break;
+            case "/callgroupend":
+                callGroupName = parts[1];
+                chat.handleGroupCallEnd(sourceName, callGroupName);
                 break;
             case "/creategroup":
                 chat.handleCreateGroup(parts, sourceName);
