@@ -48,12 +48,15 @@ public class ChatServer {
     public void createGroup(String groupName, String creatorUsername) {
         Group group = new Group(groupName);
         groups.put(groupName, group);
-
+        User user = getUser(creatorUsername);
         // Agregar al creador del grupo como miembro del grupo
         User creator = getUser(creatorUsername);
         if (creator != null) {
             group.addMember(creator);
             creator.getOut().println("[SERVIDOR] Grupo " + groupName + " creado exitosamente. Bienvenido/a al grupo!");
+        }
+        else{
+            user.getOut().println("[SERVIDOR] Error en el comando");
         }
     }
 
@@ -88,6 +91,9 @@ public class ChatServer {
         if (user != null && group != null) {
             group.removeMember(user);
         }
+        else{
+            user.getOut().println("[SERVIDOR] Error en el comando");
+        }
     }
 
     // Enviar un mensaje de broadcast a todos los usuarios excepto al remitente
@@ -119,6 +125,9 @@ public class ChatServer {
             target.getOut().println("[Mensaje privado de " + sourceName + "]: " + message);
             history.add("[Mensaje privado de " + sourceName + " a " + targetName + "]: " + message);
         }
+        else{
+            source.getOut().println("[SERVIDOR] usuario no encontrado");
+        }
     }
 
     public void sendGroupMessage(String sourceName, String groupName, String message) {
@@ -136,6 +145,9 @@ public class ChatServer {
                 source.getOut().println("[SERVIDOR] No eres miembro del grupo " + groupName);
             }
         }
+        else{
+            source.getOut().println("[SERVIDOR] grupo no encontrado");
+        }
     }
 
     public void sendPrivateAudio(String sourceName, String targetName, byte[] audioData) {
@@ -145,6 +157,9 @@ public class ChatServer {
             String audioDataStr = "/audiodata " + Base64.getEncoder().encodeToString(audioData);
             target.getOut().println(audioDataStr);
             history.add("[SERVIDOR] " + sourceName + " ha enviado un audio.");
+        }
+        else{
+            source.getOut().println("[SERVIDOR] Error en el comando");
         }
     }
     
@@ -163,6 +178,9 @@ public class ChatServer {
             } else {
                 source.getOut().println("[SERVIDOR] No eres miembro del grupo " + groupName);
             }
+        }
+        else{
+            source.getOut().println("[SERVIDOR] Error en el comando");
         }
     }
 
@@ -187,15 +205,16 @@ public class ChatServer {
 
     public void handleGroupTextMessage(String[] parts, String sourceName) {
         User source = getUser(sourceName);
-        String groupName = parts[1];
         if (parts.length == 3) {
             String message = parts[2];
-            User dest = getUser(groupName);
+            Group group = getGroup(parts[1]);
+            Group dest = group;
             if (dest != null){
+                String groupName = parts[1];
                 sendGroupMessage(sourceName, groupName, message);
             }
             else{
-                source.getOut().println("[SERVIDOR] El grupo " + groupName + " no existe.");
+                source.getOut().println("[SERVIDOR] El grupo " + " no existe.");
             }
         }
         else{
@@ -204,16 +223,24 @@ public class ChatServer {
     }
 
     public void handleCreateGroup(String[] parts, String sourceName) {
+        User source = getUser(sourceName);
         if (parts.length == 2) {
             String groupName = parts[1];
             createGroup(groupName, sourceName);
         }
+        else{
+            source.getOut().println("[SERVIDOR] Error en el comando");
+        }
     }
 
     public void handleJoinGroup(String[] parts, String sourceName) {
+        User source = getUser(sourceName);
         if (parts.length == 2) {
             String groupName = parts[1];
             joinGroup(sourceName, groupName);
+        }
+        else{
+            source.getOut().println("[SERVIDOR] Error en el comando");
         }
     }
 
